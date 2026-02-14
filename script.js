@@ -1,8 +1,19 @@
-const actionButton = document.getElementById('actionButton');
-const message = document.getElementById('message');
+const year = document.getElementById('year');
+const contactForm = document.getElementById('contactForm');
+const formMessage = document.getElementById('formMessage');
 
-if (actionButton && message) {
-  actionButton.addEventListener('click', () => {
-    message.textContent = `Button clicked at ${new Date().toLocaleTimeString()}`;
+if (year) {
+  year.textContent = String(new Date().getFullYear());
+}
+
+if (contactForm && formMessage) {
+  contactForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const data = new FormData(contactForm);
+    const name = data.get('name');
+
+    formMessage.textContent = `Thanks${name ? `, ${name}` : ''}! Your request is in. We'll get back to you within 24 hours.`;
+    contactForm.reset();
   });
 }
