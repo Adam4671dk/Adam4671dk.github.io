@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Priser - Camara</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-container">
+      <div class="logo">Camara</div>
+      <ul class="nav-menu">
+        <li><a href="/">Hjem</a></li>
+        <li><a href="/pricing.html">Priser</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/login.html" class="btn btn-small">Log ind</a></li>
+      </ul>
+      <button class="mobile-menu-toggle" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <section class="pricing-hero">
+    <div class="container">
+      <h1 class="section-title">Simpel og Transparent Prisfastsættelse</h1>
+      <p class="section-subtitle">Vælg den plan, der passer til dine behov</p>
+    </div>
+  </section>
+
+  <section class="pricing-section">
+    <div class="container">
+      <div class="pricing-toggle">
+        <button class="toggle-btn active" data-billing="monthly">Månedlig</button>
+        <button class="toggle-btn" data-billing="annual">Årlig (Spar 20%)</button>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-badge">Starter</div>
+          <h3 class="pricing-title">Starter</h3>
+          <p class="pricing-description">Perfekt til at komme i gang</p>
+
+          <div class="pricing-price">
+            <span class="price-monthly" style="display: block;">
+              <span class="amount">49</span>
+              <span class="currency">kr</span>
+              <span class="period">/måned</span>
+            </span>
+            <span class="price-annual" style="display: none;">
+              <span class="amount">470</span>
+              <span class="currency">kr</span>
+              <span class="period">/år</span>
+            </span>
+          </div>
+
+          <ul class="pricing-features">
+            <li><span class="check">✓</span> 1 Admin Token</li>
+            <li><span class="check">✓</span> Grundlæggende 2FA</li>
+            <li><span class="check">✓</span> 1 Discord Webhook</li>
+            <li><span class="check">✓</span> Email Support</li>
+            <li><span class="check">✓</span> API Adgang</li>
+            <li class="unavailable"><span class="cross">✗</span> Analytics Dashboard</li>
+            <li class="unavailable"><span class="cross">✗</span> Prioriteret Support</li>
+          </ul>
+          <button class="btn btn-outline">Vælg Plan</button>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="pricing-badge featured-badge">Mest Populær</div>
+          <h3 class="pricing-title">Professional</h3>
+          <p class="pricing-description">For voksende virksomheder</p>
+
+          <div class="pricing-price">
+            <span class="price-monthly" style="display: block;">
+              <span class="amount">149</span>
+              <span class="currency">kr</span>
+              <span class="period">/måned</span>
+            </span>
+            <span class="price-annual" style="display: none;">
+              <span class="amount">1.427</span>
+              <span class="currency">kr</span>
+              <span class="period">/år</span>
+            </span>
+          </div>
+
+          <ul class="pricing-features">
+            <li><span class="check">✓</span> 10 Admin Tokens</li>
+            <li><span class="check">✓</span> Avanceret 2FA</li>
+            <li><span class="check">✓</span> 5 Discord Webhooks</li>
+            <li><span class="check">✓</span> Bot Token Management</li>
+            <li><span class="check">✓</span> Analytics Dashboard</li>
+            <li><span class="check">✓</span> Prioriteret Support</li>
+            <li class="unavailable"><span class="cross">✗</span> Team Collaboration</li>
+          </ul>
+          <button class="btn btn-primary">Vælg Plan</button>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-badge">Enterprise</div>
+          <h3 class="pricing-title">Enterprise</h3>
+          <p class="pricing-description">For store organisationer</p>
+
+          <div class="pricing-price">
+            <span class="price-monthly" style="display: block;">
+              <span class="amount">499</span>
+              <span class="currency">kr</span>
+              <span class="period">/måned</span>
+            </span>
+            <span class="price-annual" style="display: none;">
+              <span class="amount">4.792</span>
+              <span class="currency">kr</span>
+              <span class="period">/år</span>
+            </span>
+          </div>
+
+          <ul class="pricing-features">
+            <li><span class="check">✓</span> Ubegrænsede Admin Tokens</li>
+            <li><span class="check">✓</span> Enterprise 2FA</li>
+            <li><span class="check">✓</span> Ubegrænsede Webhooks</li>
+            <li><span class="check">✓</span> Bot Token Management</li>
+            <li><span class="check">✓</span> Advanced Analytics</li>
+            <li><span class="check">✓</span> 24/7 Premium Support</li>
+            <li><span class="check">✓</span> Team Collaboration</li>
+          </ul>
+          <button class="btn btn-outline">Kontakt Sales</button>
+        </div>
+      </div>
+
+      <div class="pricing-faq">
+        <h2 class="section-title">Ofte Stillede Spørgsmål</h2>
+
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h4>Kan jeg skifte plan senere?</h4>
+            <p>Ja, du kan opgradere eller nedgradere din plan når som helst. Ændringer tager effekt ved næste betalingscyklus.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Hvad er Admin Tokens?</h4>
+            <p>Admin Tokens giver sikker adgang til dine integrationer og webhooks gennem API'er. Hver token kan konfigureres med specifikke tilladelser.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Er der fri prøveperiode?</h4>
+            <p>Ja, du får 14 dage gratis adgang til Professional-planen uden at skulle angive betalingskort.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Hvordan fungerer 2FA?</h4>
+            <p>Vores 2FA understøtter TOTP-baseret autentificering. Du modtager kodelister til backup hvis nødvendigt.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Kan jeg integrere flere Discord-servere?</h4>
+            <p>Ja, med Discord webhooks kan du forbinde med flere servere. Enterprise-planen har ubegrænsede webhooks.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Hvad med data-sikkerhed?</h4>
+            <p>Alle data krypteres end-to-end. Vi følger GDPR og andre internationale sikkerhedsstandarder.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Camara</h3>
+          <p>Intelligent service management platform</p>
+        </div>
+        <div class="footer-section">
+          <h4>Hurtige Links</h4>
+          <ul>
+            <li><a href="/">Hjem</a></li>
+            <li><a href="/pricing.html">Priser</a></li>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/login.html">Log ind</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privatlivspolitik</a></li>
+            <li><a href="#">Servicevilkår</a></li>
+            <li><a href="#">Kontakt</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Camara. Alle rettigheder forbeholdes.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="/pricing.js"></script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log ind - Camara</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="auth-page">
+  <nav class="navbar minimal">
+    <div class="container nav-container">
+      <a href="/" class="logo">Camara</a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-box">
+      <h1>Velkommen til Camara</h1>
+      <p class="auth-subtitle">Log ind på din konto eller opret en ny</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Log ind</button>
+        <button class="auth-tab" data-tab="signup">Opret konto</button>
+      </div>
+
+      <div id="login" class="auth-form active">
+        <form class="login-form">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="din@email.dk" required>
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Adgangskode</label>
+            <input type="password" id="login-password" placeholder="••••••••" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary full-width">Log ind</button>
+
+          <div class="form-divider">
+            <span>eller</span>
+          </div>
+
+          <button type="button" class="btn btn-outline full-width" id="demo-login">
+            Prøv Demo
+          </button>
+
+          <div class="form-link">
+            <a href="#">Glemt adgangskode?</a>
+          </div>
+        </form>
+
+        <div id="login-2fa" class="two-fa-form" style="display: none;">
+          <h3>To-faktor Godkendelse</h3>
+          <p>Indtast din 6-cifret kode fra din authenticator-app</p>
+          <form class="verify-2fa-form">
+            <div class="form-group">
+              <input type="text" id="2fa-code" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required>
+            </div>
+            <button type="submit" class="btn btn-primary full-width">Bekræft</button>
+            <button type="button" class="btn btn-outline full-width" id="back-to-login">Tilbage</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="signup" class="auth-form">
+        <form class="signup-form">
+          <div class="form-group">
+            <label for="signup-name">Fuldt navn</label>
+            <input type="text" id="signup-name" placeholder="Dit navn" required>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" placeholder="din@email.dk" required>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-password">Adgangskode</label>
+            <input type="password" id="signup-password" placeholder="Mindst 8 tegn" required>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-password-confirm">Bekræft adgangskode</label>
+            <input type="password" id="signup-password-confirm" placeholder="Gentag adgangskode" required>
+          </div>
+
+          <div class="form-checkbox">
+            <input type="checkbox" id="terms" required>
+            <label for="terms">Jeg accepterer servicevilkårene</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary full-width">Opret konto</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="auth-info">
+      <h2>Camara Platform</h2>
+      <div class="info-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <div>
+          <h4>Sikker Administration</h4>
+          <p>Admin tokens og 2FA for fuld kontrol</p>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <div>
+          <h4>Discord Integration</h4>
+          <p>Forbind webhooks og bot tokens</p>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <div>
+          <h4>Real-time Sync</h4>
+          <p>Automatisering og overvågning</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/auth.js"></script>
+</body>
+</html>
