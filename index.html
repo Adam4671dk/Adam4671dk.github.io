@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NovaCraft Studio | Custom Digital Services</title>
+    <meta
+      name="description"
+      content="NovaCraft Studio helps businesses launch custom websites, branding systems, and automation workflows tailored to their goals."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="nav container">
+        <div class="logo">NovaCraft<span>Studio</span></div>
+        <a class="btn btn-outline" href="#contact">Book a Free Call</a>
+      </nav>
+
+      <div class="hero-content container">
+        <p class="eyebrow">CUSTOM SERVICES FOR MODERN BRANDS</p>
+        <h1>Build a standout digital presence without the agency headache.</h1>
+        <p class="lead">
+          We design, develop, and optimize custom digital experiences that turn
+          visitors into loyal customers.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" href="#services">Explore Services</a>
+          <a class="btn btn-ghost" href="#pricing">View Pricing</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="services" class="section container">
+        <h2>What We Do</h2>
+        <p class="section-copy">
+          Choose one service or combine them into a custom growth package.
+        </p>
+        <div class="grid cards-3">
+          <article class="card">
+            <h3>Custom Website Builds</h3>
+            <p>
+              Conversion-focused websites built for speed, SEO, and beautiful
+              mobile-first experiences.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Brand Identity Systems</h3>
+            <p>
+              Logo kits, typography, color systems, and messaging that make your
+              brand instantly recognizable.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Workflow Automation</h3>
+            <p>
+              Save hours each week by automating client onboarding, lead capture,
+              and follow-up systems.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="pricing" class="section section-alt">
+        <div class="container">
+          <h2>Simple Packages</h2>
+          <p class="section-copy">Transparent pricing. No surprise fees.</p>
+          <div class="grid cards-3">
+            <article class="card pricing-card">
+              <p class="plan">Starter</p>
+              <h3>$799</h3>
+              <ul>
+                <li>Single-page launch site</li>
+                <li>Basic brand polish</li>
+                <li>1 week turnaround</li>
+              </ul>
+            </article>
+            <article class="card pricing-card featured">
+              <p class="plan">Growth</p>
+              <h3>$2,200</h3>
+              <ul>
+                <li>5-page custom website</li>
+                <li>Brand identity kit</li>
+                <li>Lead capture automation</li>
+              </ul>
+            </article>
+            <article class="card pricing-card">
+              <p class="plan">Scale</p>
+              <h3>Custom Quote</h3>
+              <ul>
+                <li>Advanced integrations</li>
+                <li>Content & SEO strategy</li>
+                <li>Monthly optimization</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section container testimonials">
+        <h2>Client Wins</h2>
+        <div class="grid cards-2">
+          <blockquote class="card quote">
+            “NovaCraft redesigned our site and tripled qualified leads in 60
+            days.”
+            <cite>— Ava, Founder at Bloomwell</cite>
+          </blockquote>
+          <blockquote class="card quote">
+            “Their automation setup saved our team 12+ hours every week.”
+            <cite>— Marcus, Operations Lead at Northline</cite>
+          </blockquote>
+        </div>
+      </section>
+
+      <section id="contact" class="section container contact">
+        <h2>Let’s Build Something Great</h2>
+        <p class="section-copy">Tell us what you need and get a response within 24 hours.</p>
+        <form id="contactForm" class="contact-form">
+          <label>
+            Name
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" required />
+          </label>
+          <label>
+            Project Goals
+            <textarea name="goals" rows="4" required></textarea>
+          </label>
+          <button class="btn" type="submit">Send Request</button>
+          <p id="formMessage" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>© <span id="year"></span> NovaCraft Studio — Custom digital services.</p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
