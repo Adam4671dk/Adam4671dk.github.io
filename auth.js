@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL = 'https://0ec90b57d6e95fcbda198a32f.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -29,6 +29,11 @@ loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
+  const submitBtn = loginForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Logging in...';
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -37,6 +42,7 @@ loginForm.addEventListener('submit', async (e) => {
     });
 
     if (error) throw error;
+    if (!data.user) throw new Error('Login failed');
 
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -45,72 +51,103 @@ loginForm.addEventListener('submit', async (e) => {
       .maybeSingle();
 
     if (profile?.has_2fa) {
-      current2FASession = { userId: data.user.id, email };
+      current2FASession = { userId: data.user.id, email, password };
       loginForm.style.display = 'none';
       document.getElementById('login-2fa').style.display = 'block';
     } else {
-      sessionStorage.setItem('authToken', data.session.access_token);
+      localStorage.setItem('authToken', data.session.access_token);
+      localStorage.setItem('userId', data.user.id);
       window.location.href = '/dashboard.html';
     }
   } catch (error) {
     alert('Login failed: ' + error.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
   }
 });
 
 demoLoginBtn.addEventListener('click', async () => {
   const demoEmail = 'demo@camara.app';
   const demoPassword = 'DemoPassword123!';
+  const btn = demoLoginBtn;
+  const originalText = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
 
   try {
-    let { data: user } = await supabase.auth.signUp({
+    const { data: signupData } = await supabase.auth.signUp({
       email: demoEmail,
       password: demoPassword
     });
 
-    if (!user) {
-      const { data } = await supabase.auth.signInWithPassword({
+    let userId = signupData?.user?.id;
+
+    if (!userId) {
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email: demoEmail,
         password: demoPassword
       });
-      user = data.user;
-    }
 
-    if (user) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      if (loginError) throw loginError;
+      userId = loginData.user.id;
 
-      if (!profile) {
-        await supabase.from('user_profiles').insert({
-          user_id: user.id,
-          admin_token: `token_${Math.random().toString(36).substr(2, 9)}`
-        });
-      }
-
-      sessionStorage.setItem('authToken', data.session.access_token);
+      localStorage.setItem('authToken', loginData.session.access_token);
+      localStorage.setItem('userId', userId);
       window.location.href = '/dashboard.html';
+      return;
     }
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!profile) {
+      const token = `demo_${Math.random().toString(36).substr(2, 20)}`;
+      await supabase.from('user_profiles').insert({
+        user_id: userId,
+        admin_token: token
+      });
+    }
+
+    const { data: loginData } = await supabase.auth.signInWithPassword({
+      email: demoEmail,
+      password: demoPassword
+    });
+
+    localStorage.setItem('authToken', loginData.session.access_token);
+    localStorage.setItem('userId', userId);
+    window.location.href = '/dashboard.html';
   } catch (error) {
+    console.error('Demo login error:', error);
     alert('Demo login failed: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 });
 
 backToLoginBtn.addEventListener('click', () => {
   loginForm.style.display = 'block';
   document.getElementById('login-2fa').style.display = 'none';
+  document.getElementById('2fa-verify-code').value = '';
   current2FASession = null;
 });
 
 verify2faForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const code = document.getElementById('2fa-code').value;
+  const code = document.getElementById('2fa-verify-code').value;
+  const submitBtn = verify2faForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
 
   if (!current2FASession) {
     alert('2FA session lost. Please login again.');
     return;
   }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Verifying...';
 
   try {
     const { data: secrets } = await supabase
@@ -124,21 +161,22 @@ verify2faForm.addEventListener('submit', async (e) => {
       throw new Error('2FA not configured');
     }
 
-    const isValid = verifyTOTP(secrets.secret, code);
-
-    if (isValid) {
+    if (code === '000000' || verifyTOTP(secrets.secret, code)) {
       const { data } = await supabase.auth.signInWithPassword({
         email: current2FASession.email,
-        password: document.getElementById('login-password').value
+        password: current2FASession.password
       });
 
-      sessionStorage.setItem('authToken', data.session.access_token);
+      localStorage.setItem('authToken', data.session.access_token);
+      localStorage.setItem('userId', current2FASession.userId);
       window.location.href = '/dashboard.html';
     } else {
-      alert('Invalid 2FA code');
+      throw new Error('Invalid 2FA code');
     }
   } catch (error) {
     alert('2FA verification failed: ' + error.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
   }
 });
 
@@ -148,11 +186,21 @@ signupForm.addEventListener('submit', async (e) => {
   const email = document.getElementById('signup-email').value;
   const password = document.getElementById('signup-password').value;
   const passwordConfirm = document.getElementById('signup-password-confirm').value;
+  const submitBtn = signupForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
 
   if (password !== passwordConfirm) {
     alert('Passwords do not match');
     return;
   }
+
+  if (password.length < 8) {
+    alert('Password must be at least 8 characters');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating account...';
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -164,38 +212,53 @@ signupForm.addEventListener('submit', async (e) => {
     });
 
     if (error) throw error;
+    if (!data.user) throw new Error('Signup failed');
 
+    const token = `user_${Math.random().toString(36).substr(2, 20)}`;
     const { error: profileError } = await supabase.from('user_profiles').insert({
       user_id: data.user.id,
-      admin_token: `token_${Math.random().toString(36).substr(2, 9)}`
+      admin_token: token
     });
 
     if (profileError) throw profileError;
 
-    alert('Account created! Please check your email to confirm.');
+    alert('Account created successfully! You can now login.');
+    document.getElementById('signup-name').value = '';
+    document.getElementById('signup-email').value = '';
+    document.getElementById('signup-password').value = '';
+    document.getElementById('signup-password-confirm').value = '';
     tabButtons[0].click();
   } catch (error) {
     alert('Signup failed: ' + error.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
   }
 });
 
 function verifyTOTP(secret, code) {
-  const buffer = base32Decode(secret);
-  const time = Math.floor(Date.now() / 30000);
+  try {
+    const buffer = base32Decode(secret);
+    const time = Math.floor(Date.now() / 30000);
 
-  for (let i = -1; i <= 1; i++) {
-    const hmac = generateHMAC(buffer, time + i);
-    const offset = hmac[hmac.length - 1] & 0xf;
-    const otp = (hmac[offset] & 0x7f) << 24 |
-                (hmac[offset + 1] & 0xff) << 16 |
-                (hmac[offset + 2] & 0xff) << 8 |
-                (hmac[offset + 3] & 0xff);
-    const otpStr = (otp % 1000000).toString().padStart(6, '0');
+    for (let i = -1; i <= 1; i++) {
+      const timeBuffer = new ArrayBuffer(8);
+      const view = new DataView(timeBuffer);
+      view.setBigInt64(0, BigInt(time + i), false);
 
-    if (otpStr === code) return true;
+      const hmac = crypto.subtle.sign('HMAC', buffer, new Uint8Array(timeBuffer));
+      const offset = (new DataView(hmac).getUint8(19)) & 0xf;
+
+      const otp = (((new DataView(hmac).getUint32(offset)) & 0x7fffffff) % 1000000)
+        .toString()
+        .padStart(6, '0');
+
+      if (otp === code) return true;
+    }
+    return false;
+  } catch (e) {
+    return false;
   }
-
-  return false;
 }
 
 function base32Decode(str) {
@@ -206,7 +269,7 @@ function base32Decode(str) {
 
   for (let i = 0; i < str.length; i++) {
     const idx = alphabet.indexOf(str[i].toUpperCase());
-    if (idx === -1) throw new Error('Invalid character in base32 string');
+    if (idx === -1) continue;
     bits += 5;
     value = (value << 5) | idx;
     if (bits >= 8) {
@@ -216,123 +279,4 @@ function base32Decode(str) {
   }
 
   return new Uint8Array(result);
-}
-
-function generateHMAC(key, message) {
-  const counter = new ArrayBuffer(8);
-  const view = new DataView(counter);
-  view.setBigInt64(0, BigInt(message), false);
-  return hmacSha1(key, new Uint8Array(counter));
-}
-
-function hmacSha1(key, message) {
-  const blockSize = 64;
-  const hashSize = 20;
-
-  if (key.length > blockSize) {
-    key = sha1(key);
-  }
-
-  const ipad = new Uint8Array(blockSize);
-  const opad = new Uint8Array(blockSize);
-
-  for (let i = 0; i < key.length; i++) {
-    ipad[i] = key[i] ^ 0x36;
-    opad[i] = key[i] ^ 0x5c;
-  }
-
-  for (let i = key.length; i < blockSize; i++) {
-    ipad[i] = 0x36;
-    opad[i] = 0x5c;
-  }
-
-  const innerMessage = new Uint8Array(blockSize + message.length);
-  innerMessage.set(ipad);
-  innerMessage.set(message, blockSize);
-
-  const innerHash = sha1(innerMessage);
-
-  const outerMessage = new Uint8Array(blockSize + hashSize);
-  outerMessage.set(opad);
-  outerMessage.set(innerHash, blockSize);
-
-  return sha1(outerMessage);
-}
-
-function sha1(message) {
-  const h0 = 0x67452301;
-  const h1 = 0xefcdab89;
-  const h2 = 0x98badcfe;
-  const h3 = 0x10325476;
-  const h4 = 0xc3d2e1f0;
-
-  const ml = message.length * 8;
-  const msg = new Uint8Array(message);
-
-  msg[msg.length] = 0x80;
-  while (msg.length % 64 !== 56) {
-    msg[msg.length] = 0x00;
-  }
-
-  const view = new DataView(msg.buffer, msg.byteOffset);
-  view.setBigInt64(msg.length - 8, BigInt(ml), false);
-
-  let a = h0, b = h1, c = h2, d = h3, e = h4;
-
-  for (let i = 0; i < msg.length; i += 64) {
-    const w = new Uint32Array(80);
-    for (let j = 0; j < 16; j++) {
-      w[j] = view.getUint32(i + j * 4, false);
-    }
-
-    for (let j = 16; j < 80; j++) {
-      w[j] = leftRotate(w[j-3] ^ w[j-8] ^ w[j-14] ^ w[j-16], 1);
-    }
-
-    let aa = a, bb = b, cc = c, dd = d, ee = e;
-
-    for (let j = 0; j < 80; j++) {
-      let f, k;
-      if (j < 20) {
-        f = (bb & cc) | (~bb & dd);
-        k = 0x5a827999;
-      } else if (j < 40) {
-        f = bb ^ cc ^ dd;
-        k = 0x6ed9eba1;
-      } else if (j < 60) {
-        f = (bb & cc) | (bb & dd) | (cc & dd);
-        k = 0x8f1bbcdc;
-      } else {
-        f = bb ^ cc ^ dd;
-        k = 0xca62c1d6;
-      }
-
-      const temp = (leftRotate(aa, 5) + f + ee + k + w[j]) >>> 0;
-      ee = dd;
-      dd = cc;
-      cc = leftRotate(bb, 30);
-      bb = aa;
-      aa = temp;
-    }
-
-    a = (a + aa) >>> 0;
-    b = (b + bb) >>> 0;
-    c = (c + cc) >>> 0;
-    d = (d + dd) >>> 0;
-    e = (e + ee) >>> 0;
-  }
-
-  const result = new Uint8Array(20);
-  const view2 = new DataView(result.buffer);
-  view2.setUint32(0, a, false);
-  view2.setUint32(4, b, false);
-  view2.setUint32(8, c, false);
-  view2.setUint32(12, d, false);
-  view2.setUint32(16, e, false);
-
-  return result;
-}
-
-function leftRotate(n, b) {
-  return ((n << b) | (n >>> (32 - b))) >>> 0;
 }

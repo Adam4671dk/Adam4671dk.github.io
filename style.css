@@ -1325,8 +1325,14 @@ body {
   background: #c92a2a;
 }
 
-.two-fa-setup,
-#2fa-qr {
+.two-fa-setup {
+  background: white;
+  padding: var(--spacing-4);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+[id="2fa-qr"] {
   background: white;
   padding: var(--spacing-4);
   border-radius: 12px;

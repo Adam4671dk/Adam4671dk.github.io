@@ -3,25 +3,31 @@ const navMenu = document.querySelector('.nav-menu');
 const navbar = document.querySelector('.navbar');
 const contactForm = document.querySelector('.contact-form');
 
-mobileMenuToggle.addEventListener('click', () => {
-  mobileMenuToggle.classList.toggle('active');
-  navMenu.classList.toggle('active');
-});
-
-navMenu.querySelectorAll('a').forEach(link => {
-  link.addEventListener('click', () => {
-    mobileMenuToggle.classList.remove('active');
-    navMenu.classList.remove('active');
+if (mobileMenuToggle && navMenu) {
+  mobileMenuToggle.addEventListener('click', () => {
+    mobileMenuToggle.classList.toggle('active');
+    navMenu.classList.toggle('active');
   });
-});
+}
 
-window.addEventListener('scroll', () => {
-  if (window.scrollY > 50) {
-    navbar.classList.add('scrolled');
-  } else {
-    navbar.classList.remove('scrolled');
-  }
-});
+if (navMenu) {
+  navMenu.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (mobileMenuToggle) mobileMenuToggle.classList.remove('active');
+      if (navMenu) navMenu.classList.remove('active');
+    });
+  });
+}
+
+if (navbar) {
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  });
+}
 
 const observerOptions = {
   threshold: 0.1,
@@ -44,28 +50,29 @@ document.querySelectorAll('.service-card, .stat, .contact-item').forEach(el => {
   observer.observe(el);
 });
 
-contactForm.addEventListener('submit', (e) => {
-  e.preventDefault();
+if (contactForm) {
+  contactForm.addEventListener('submit', (e) => {
+    e.preventDefault();
 
-  const formData = new FormData(contactForm);
-  const button = contactForm.querySelector('.btn');
-  const originalText = button.textContent;
+    const button = contactForm.querySelector('.btn');
+    const originalText = button.textContent;
 
-  button.textContent = 'Sender...';
-  button.disabled = true;
-
-  setTimeout(() => {
-    button.textContent = 'Besked sendt!';
-    button.style.backgroundColor = 'var(--success-500)';
+    button.textContent = 'Sender...';
+    button.disabled = true;
 
     setTimeout(() => {
-      button.textContent = originalText;
-      button.disabled = false;
-      button.style.backgroundColor = '';
-      contactForm.reset();
-    }, 2000);
-  }, 1000);
-});
+      button.textContent = 'Besked sendt!';
+      button.style.backgroundColor = 'var(--success-500)';
+
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+        button.style.backgroundColor = '';
+        contactForm.reset();
+      }, 2000);
+    }, 1000);
+  });
+}
 
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function (e) {

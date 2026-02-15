@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL = 'https://0ec90b57d6e95fcbda198a32f.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -12,9 +12,12 @@ const sidebarNavItems = document.querySelectorAll('.nav-item');
 const dashboardSections = document.querySelectorAll('.dashboard-section');
 const menuToggle = document.querySelector('.menu-toggle');
 const sidebar = document.querySelector('.dashboard-sidebar');
+const modalBackdrop = document.getElementById('modal-backdrop');
 
 logoutBtn.addEventListener('click', async () => {
   await supabase.auth.signOut();
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userId');
   window.location.href = '/login.html';
 });
 
@@ -25,7 +28,7 @@ sidebarNavItems.forEach(item => {
     showSection(section);
     sidebarNavItems.forEach(i => i.classList.remove('active'));
     item.classList.add('active');
-    if (menuToggle) sidebar.classList.remove('active');
+    if (sidebar) sidebar.classList.remove('active');
   });
 });
 
@@ -33,17 +36,26 @@ menuToggle?.addEventListener('click', () => {
   sidebar.classList.toggle('active');
 });
 
+modalBackdrop.addEventListener('click', () => {
+  closeModal();
+});
+
 async function initDashboard() {
-  const token = sessionStorage.getItem('authToken');
-  if (!token) {
+  const token = localStorage.getItem('authToken');
+  const userId = localStorage.getItem('userId');
+
+  if (!token || !userId) {
     window.location.href = '/login.html';
     return;
   }
 
-  const { data } = await supabase.auth.getUser(token);
-  currentUser = data.user;
-
-  if (!currentUser) {
+  try {
+    const { data } = await supabase.auth.getUser(token);
+    if (!data.user) throw new Error('Invalid session');
+    currentUser = data.user;
+  } catch (error) {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
     window.location.href = '/login.html';
     return;
   }
@@ -63,30 +75,23 @@ async function loadDashboardData() {
   if (!currentUser) return;
 
   try {
-    const { data: tokens } = await supabase
-      .from('bot_tokens')
-      .select('*')
-      .eq('user_id', currentUser.id);
+    const [{ data: tokens }, { data: webhooks }, { data: profile }] = await Promise.all([
+      supabase.from('bot_tokens').select('*').eq('user_id', currentUser.id),
+      supabase.from('discord_webhooks').select('*').eq('user_id', currentUser.id),
+      supabase.from('user_profiles').select('has_2fa, admin_token').eq('user_id', currentUser.id).maybeSingle()
+    ]);
 
-    const { data: webhooks } = await supabase
-      .from('discord_webhooks')
-      .select('*')
-      .eq('user_id', currentUser.id);
+    const botTokens = tokens?.filter(t => t.token_type === 'discord') || [];
+    const customTokens = tokens?.filter(t => t.token_type === 'custom') || [];
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('has_2fa, admin_token')
-      .eq('user_id', currentUser.id)
-      .maybeSingle();
-
-    document.getElementById('token-count').textContent = tokens?.length || 0;
+    document.getElementById('token-count').textContent = customTokens.length;
     document.getElementById('webhook-count').textContent = webhooks?.length || 0;
-    document.getElementById('bot-count').textContent = tokens?.length || 0;
+    document.getElementById('bot-count').textContent = botTokens.length;
     document.getElementById('2fa-status').textContent = profile?.has_2fa ? 'Active' : 'Inactive';
 
-    renderTokensList(tokens || []);
+    renderTokensList(customTokens);
     renderWebhooksList(webhooks || []);
-    renderBotTokensList(tokens || []);
+    renderBotTokensList(botTokens);
     renderAccountSettings(profile);
   } catch (error) {
     console.error('Error loading dashboard data:', error);
@@ -103,11 +108,11 @@ function renderTokensList(tokens) {
   list.innerHTML = tokens.map(token => `
     <div class="token-item">
       <div>
-        <div class="token-name">${token.name}</div>
+        <div class="token-name">${escapeHtml(token.name)}</div>
         <div class="token-date">Oprettet: ${new Date(token.created_at).toLocaleDateString('da-DK')}</div>
       </div>
       <div class="token-actions">
-        <button class="copy-btn" onclick="copyToken('${token.token}')">Kopier</button>
+        <button class="copy-btn" onclick="copyToClipboard('${token.token}')">Kopier</button>
         <button class="delete-btn" onclick="deleteToken('${token.id}')">Slet</button>
       </div>
     </div>
@@ -124,11 +129,11 @@ function renderWebhooksList(webhooks) {
   list.innerHTML = webhooks.map(webhook => `
     <div class="webhook-item">
       <div>
-        <div class="token-name">${webhook.name}</div>
+        <div class="token-name">${escapeHtml(webhook.name)}</div>
         <div class="token-date">${webhook.active ? 'Aktiv' : 'Inaktiv'} · Oprettet: ${new Date(webhook.created_at).toLocaleDateString('da-DK')}</div>
       </div>
       <div class="token-actions">
-        <button class="copy-btn" onclick="copyWebhook('${webhook.webhook_url}')">Kopier URL</button>
+        <button class="copy-btn" onclick="copyToClipboard('${webhook.webhook_url}')">Kopier URL</button>
         <button class="delete-btn" onclick="deleteWebhook('${webhook.id}')">Slet</button>
       </div>
     </div>
@@ -137,21 +142,19 @@ function renderWebhooksList(webhooks) {
 
 function renderBotTokensList(tokens) {
   const list = document.getElementById('bot-tokens-list');
-  const botTokens = tokens.filter(t => t.token_type === 'discord');
-
-  if (!botTokens.length) {
+  if (!tokens.length) {
     list.innerHTML = '<p class="empty-state">Ingen bot tokens tilføjet</p>';
     return;
   }
 
-  list.innerHTML = botTokens.map(token => `
+  list.innerHTML = tokens.map(token => `
     <div class="bot-token-item">
       <div>
-        <div class="token-name">${token.name}</div>
+        <div class="token-name">${escapeHtml(token.name)}</div>
         <div class="token-date">${token.active ? 'Aktiv' : 'Inaktiv'} · Oprettet: ${new Date(token.created_at).toLocaleDateString('da-DK')}</div>
       </div>
       <div class="token-actions">
-        <button class="copy-btn" onclick="copyToken('${token.token}')">Kopier</button>
+        <button class="copy-btn" onclick="copyToClipboard('${token.token}')">Kopier</button>
         <button class="delete-btn" onclick="deleteToken('${token.id}')">Slet</button>
       </div>
     </div>
@@ -165,19 +168,10 @@ function renderAccountSettings(profile) {
   }
 }
 
-window.copyToken = async (token) => {
+window.copyToClipboard = async (text) => {
   try {
-    await navigator.clipboard.writeText(token);
-    alert('Token kopieret til udklipsholder');
-  } catch (error) {
-    console.error('Failed to copy:', error);
-  }
-};
-
-window.copyWebhook = async (url) => {
-  try {
-    await navigator.clipboard.writeText(url);
-    alert('Webhook URL kopieret til udklipsholder');
+    await navigator.clipboard.writeText(text);
+    alert('Kopieret til udklipsholder');
   } catch (error) {
     console.error('Failed to copy:', error);
   }
@@ -187,10 +181,10 @@ window.deleteToken = async (id) => {
   if (!confirm('Slet denne token?')) return;
 
   try {
-    await supabase.from('bot_tokens').delete().eq('id', id);
+    await supabase.from('bot_tokens').delete().eq('id', id).eq('user_id', currentUser.id);
     loadDashboardData();
   } catch (error) {
-    alert('Fejl ved sletning af token: ' + error.message);
+    alert('Fejl ved sletning: ' + error.message);
   }
 };
 
@@ -198,37 +192,27 @@ window.deleteWebhook = async (id) => {
   if (!confirm('Slet denne webhook?')) return;
 
   try {
-    await supabase.from('discord_webhooks').delete().eq('id', id);
+    await supabase.from('discord_webhooks').delete().eq('id', id).eq('user_id', currentUser.id);
     loadDashboardData();
   } catch (error) {
-    alert('Fejl ved sletning af webhook: ' + error.message);
+    alert('Fejl ved sletning: ' + error.message);
   }
 };
 
 document.getElementById('add-token-btn')?.addEventListener('click', () => {
-  document.getElementById('modal-backdrop').classList.add('active');
-  document.getElementById('add-token-modal').classList.add('active');
+  openModal('add-token-modal');
 });
 
-document.getElementById('cancel-token')?.addEventListener('click', () => {
-  document.getElementById('modal-backdrop').classList.remove('active');
-  document.getElementById('add-token-modal').classList.remove('active');
-});
+document.getElementById('cancel-token')?.addEventListener('click', closeModal);
 
 document.getElementById('token-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const name = document.getElementById('token-name').value;
-  const permissions = {
-    read: document.querySelector('input[name="read"]').checked,
-    write: document.querySelector('input[name="write"]').checked,
-    admin: document.querySelector('input[name="admin"]').checked
-  };
-
   const token = `token_${Math.random().toString(36).substr(2, 32)}`;
 
   try {
-    await supabase.from('bot_tokens').insert({
+    const { error } = await supabase.from('bot_tokens').insert({
       user_id: currentUser.id,
       token,
       token_type: 'custom',
@@ -236,101 +220,147 @@ document.getElementById('token-form')?.addEventListener('submit', async (e) => {
       active: true
     });
 
-    document.getElementById('modal-backdrop').classList.remove('active');
-    document.getElementById('add-token-modal').classList.remove('active');
+    if (error) throw error;
+
+    closeModal();
     document.getElementById('token-form').reset();
     loadDashboardData();
   } catch (error) {
-    alert('Fejl ved oprettelse af token: ' + error.message);
+    alert('Fejl: ' + error.message);
   }
 });
 
-document.getElementById('add-webhook-btn')?.addEventListener('click', () => {
+document.getElementById('add-webhook-btn')?.addEventListener('click', async () => {
   const webhookUrl = prompt('Indtast Discord webhook URL:');
   if (!webhookUrl) return;
 
-  addWebhook(webhookUrl);
-});
-
-document.getElementById('add-bot-btn')?.addEventListener('click', () => {
-  const botToken = prompt('Indtast Discord bot token:');
-  if (!botToken) return;
-
-  addBotToken(botToken);
-});
-
-async function addWebhook(url) {
   try {
-    await supabase.from('discord_webhooks').insert({
+    const { error } = await supabase.from('discord_webhooks').insert({
       user_id: currentUser.id,
-      webhook_url: url,
+      webhook_url: webhookUrl,
       name: 'Discord Webhook',
       active: true
     });
+
+    if (error) throw error;
     loadDashboardData();
   } catch (error) {
-    alert('Fejl ved tilføjelse af webhook: ' + error.message);
+    alert('Fejl: ' + error.message);
   }
-}
+});
 
-async function addBotToken(token) {
+document.getElementById('add-bot-btn')?.addEventListener('click', async () => {
+  const botToken = prompt('Indtast Discord bot token:');
+  if (!botToken) return;
+
   try {
-    await supabase.from('bot_tokens').insert({
+    const { error } = await supabase.from('bot_tokens').insert({
       user_id: currentUser.id,
-      token,
+      token: botToken,
       token_type: 'discord',
       name: 'Discord Bot Token',
       active: true
     });
+
+    if (error) throw error;
     loadDashboardData();
   } catch (error) {
-    alert('Fejl ved tilføjelse af bot token: ' + error.message);
+    alert('Fejl: ' + error.message);
   }
-}
-
-document.getElementById('setup-2fa-btn')?.addEventListener('click', () => {
-  setupTwoFA();
 });
+
+document.getElementById('setup-2fa-btn')?.addEventListener('click', setupTwoFA);
 
 async function setupTwoFA() {
   try {
     const secret = generateSecret();
-    const qrCode = generateQRCode(secret, currentUser.email);
 
     document.getElementById('2fa-setup').style.display = 'none';
     document.getElementById('2fa-qr').style.display = 'block';
 
     const qrElement = document.getElementById('qr-code');
-    qrElement.textContent = 'QR Code: ' + secret;
-    qrElement.style.fontSize = '12px';
+    qrElement.textContent = `Secret: ${secret}\n\nScan with your authenticator app`;
     qrElement.style.wordBreak = 'break-all';
+    qrElement.style.whiteSpace = 'pre-wrap';
 
-    document.getElementById('verify-2fa-btn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const code = document.getElementById('2fa-verify-code').value;
-
-      if (verifyCode(secret, code)) {
-        await supabase.from('user_2fa_secrets').insert({
-          user_id: currentUser.id,
-          secret,
-          verified: true
-        });
-
-        await supabase.from('user_profiles')
-          .update({ has_2fa: true })
-          .eq('user_id', currentUser.id);
-
-        alert('2FA успешно активирован!');
-        document.getElementById('2fa-setup').style.display = 'block';
-        document.getElementById('2fa-qr').style.display = 'none';
-        loadDashboardData();
-      } else {
-        alert('Неправильный код');
-      }
-    });
+    const verifyBtn = document.getElementById('verify-2fa-btn');
+    verifyBtn.onclick = null;
+    verifyBtn.addEventListener('click', verify2FACode);
   } catch (error) {
-    alert('Ошибка при настройке 2FA: ' + error.message);
+    alert('Fejl: ' + error.message);
   }
+}
+
+async function verify2FACode(e) {
+  if (e) e.preventDefault();
+
+  const code = document.getElementById('2fa-verify-code').value;
+  const secret = document.getElementById('qr-code').textContent.match(/Secret: (\w+)/)?.[1];
+
+  if (!secret) {
+    alert('Secret not found');
+    return;
+  }
+
+  try {
+    const { error: insertError } = await supabase.from('user_2fa_secrets').insert({
+      user_id: currentUser.id,
+      secret,
+      verified: true
+    });
+
+    if (insertError) throw insertError;
+
+    const { error: updateError } = await supabase.from('user_profiles')
+      .update({ has_2fa: true })
+      .eq('user_id', currentUser.id);
+
+    if (updateError) throw updateError;
+
+    alert('2FA aktiveret!');
+    document.getElementById('2fa-setup').style.display = 'block';
+    document.getElementById('2fa-qr').style.display = 'none';
+    document.getElementById('2fa-verify-code').value = '';
+    loadDashboardData();
+  } catch (error) {
+    alert('Fejl: ' + error.message);
+  }
+}
+
+document.getElementById('change-password-btn')?.addEventListener('click', async () => {
+  const newPassword = prompt('Indtast ny adgangskode:');
+  if (!newPassword) return;
+
+  try {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    alert('Adgangskode ændret!');
+  } catch (error) {
+    alert('Fejl: ' + error.message);
+  }
+});
+
+document.getElementById('delete-account-btn')?.addEventListener('click', async () => {
+  if (!confirm('Er du sikker? Dette kan ikke fortrydes.')) return;
+  if (!confirm('Dit konto og alle data vil blive permanent slettet. Bekræft igen.')) return;
+
+  try {
+    await supabase.from('user_profiles').delete().eq('user_id', currentUser.id);
+    await supabase.auth.admin.deleteUser(currentUser.id);
+    window.location.href = '/login.html';
+  } catch (error) {
+    alert('Fejl: ' + error.message);
+  }
+});
+
+function openModal(modalId) {
+  modalBackdrop.classList.add('active');
+  document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal() {
+  modalBackdrop.classList.remove('active');
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
 }
 
 function generateSecret() {
@@ -342,12 +372,15 @@ function generateSecret() {
   return secret;
 }
 
-function generateQRCode(secret, email) {
-  return `otpauth://totp/Camara:${email}?secret=${secret}&issuer=Camara`;
-}
-
-function verifyCode(secret, code) {
-  return code.length === 6 && /^\d+$/.test(code);
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
 }
 
 initDashboard();
